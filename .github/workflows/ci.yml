@@ -6,38 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Infrastructure
-        uses: actions/checkout@v4
-        with:
-          path: Platform.Infrastructure
-
-      - name: Checkout Application
-        uses: actions/checkout@v4
-        with:
-          repository: Platform-System/Platform.Application
-          path: Platform.Application
-
-      - name: Checkout Domain
-        uses: actions/checkout@v4
-        with:
-          repository: Platform-System/Platform.Domain
-          path: Platform.Domain
-
-      - name: Checkout BuildingBlocks
-        uses: actions/checkout@v4
-        with:
-          repository: Platform-System/Platform.BuildingBlocks
-          path: Platform.BuildingBlocks
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-
-      - name: Restore
-        run: dotnet restore Platform.Infrastructure/Platform.Infrastructure.csproj
-
-      - name: Build
-        run: dotnet build Platform.Infrastructure/Platform.Infrastructure.csproj --no-restore
+    uses: Platform-System/Platform.CI-CD/.github/workflows/dotnet-build-template.yml@main
+    with:
+      project_path: 'Platform.Infrastructure.csproj'
+      dependencies: 'Platform-System/Platform.Application,Platform-System/Platform.Domain,Platform-System/Platform.BuildingBlocks'
