@@ -8,7 +8,7 @@ namespace Platform.Infrastructure.Data
     public abstract class BaseDbContext : DbContext
     {
         private readonly string _currentUserId;
-        public BaseDbContext(DbContextOptions options, IDateTimeProvider dateTimeProvider, string? currentUserId = null) : base(options)
+        public BaseDbContext(DbContextOptions options, string? currentUserId = null) : base(options)
         {
             _currentUserId = currentUserId ?? "system";
         }
