@@ -9,4 +9,4 @@ jobs:
     uses: Platform-System/Platform.CI-CD/.github/workflows/dotnet-build-template.yml@main
     with:
       project_path: 'Platform.Infrastructure.csproj'
-      dependencies: 'Platform-System/Platform.Application,Platform-System/Platform.Domain,Platform-System/Platform.BuildingBlocks'
+      dependencies: 'Platform-System/Platform.Application,Platform-System/Platform.BuildingBlocks,Platform-System/Platform.Domain'
