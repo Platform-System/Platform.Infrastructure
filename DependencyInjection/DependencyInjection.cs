@@ -4,7 +4,7 @@ using Platform.Application.Abstractions.Data;
 using Platform.Infrastructure.Caching;
 using Platform.Infrastructure.Data;
 
-namespace Platform.Infrastructure.Extensions;
+namespace Platform.Infrastructure.DependencyInjection;
 
 public static class DependencyInjection
 {

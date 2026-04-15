@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Platform.BuildingBlocks.Abstractions;
 using Platform.Domain.Common;
 
