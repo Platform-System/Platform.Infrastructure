@@ -7,14 +7,15 @@ namespace Platform.Infrastructure.Data
 {
     public abstract class BaseDbContext : DbContext
     {
-        private readonly string _currentUserId;
-        public BaseDbContext(DbContextOptions options, string? currentUserId = null) : base(options)
+        private readonly ICurrentUserProvider? _currentUserProvider;
+        public BaseDbContext(DbContextOptions options, ICurrentUserProvider? currentUserProvider = null) : base(options)
         {
-            _currentUserId = currentUserId ?? "system";
+            _currentUserProvider = currentUserProvider;
         }
         private string NormalizeUserId()
         {
-            if (Guid.TryParse(_currentUserId, out var guid)) return guid.ToString();
+            var currentUserId = _currentUserProvider?.CurrentUserId;
+            if (Guid.TryParse(currentUserId, out var guid)) return guid.ToString();
             return "system";
         }
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
