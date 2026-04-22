@@ -1,4 +1,4 @@
-name: Platform.Infrastructure CI
+name: Infrastructure CI
 
 on:
   push:
