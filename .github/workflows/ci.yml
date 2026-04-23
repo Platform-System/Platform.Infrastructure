@@ -1,4 +1,4 @@
-name: Infrastructure CI
+name: CI
 
 on:
   push:
@@ -10,3 +10,4 @@ jobs:
     with:
       project_path: 'Platform.Infrastructure.csproj'
       dependencies: 'Platform-System/Platform.Application,Platform-System/Platform.BuildingBlocks,Platform-System/Platform.Domain'
+
