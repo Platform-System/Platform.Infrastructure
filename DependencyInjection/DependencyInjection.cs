@@ -15,19 +15,27 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var blobConnectionString = configuration.GetConnectionString("BlobStorage")
-            ?? throw new InvalidOperationException("Connection string 'BlobStorage' is not configured.");
+        // 1. Redis: Sử dụng Factory để không crash khi startup nếu chưa có Redis
+        var redisConnectionString = configuration.GetConnectionString("Redis");
+        if (!string.IsNullOrWhiteSpace(redisConnectionString))
+        {
+            services.AddSingleton<IConnectionMultiplexer>(_ => 
+                ConnectionMultiplexer.Connect(redisConnectionString));
+            
+            services.AddSingleton<IRedisService, RedisService>();
+        }
 
-        var redisConnectionString = configuration.GetConnectionString("Redis")
-            ?? throw new InvalidOperationException("Connection string 'Redis' is not configured.");
+        // 2. Blob Storage: Chỉ đăng ký nếu có chuỗi kết nối
+        var blobConnectionString = configuration.GetConnectionString("BlobStorage");
+        if (!string.IsNullOrWhiteSpace(blobConnectionString))
+        {
+            services.AddSingleton(_ => new BlobServiceClient(blobConnectionString));
+            services.AddScoped<IBlobService, BlobService>();
+        }
 
-        services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
-
-        services.AddSingleton(new BlobServiceClient(blobConnectionString));
+        // 3. Core Data Services
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-        services.AddScoped<IBlobService, BlobService>();
-        services.AddSingleton<IRedisService, RedisService>();
         
         return services;
     }
