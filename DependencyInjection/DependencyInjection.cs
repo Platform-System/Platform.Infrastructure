@@ -1,4 +1,5 @@
 using Azure.Storage.Blobs;
+using StackExchange.Redis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Platform.Application.Abstractions.Caching;
@@ -16,6 +17,11 @@ public static class DependencyInjection
     {
         var blobConnectionString = configuration.GetConnectionString("BlobStorage")
             ?? throw new InvalidOperationException("Connection string 'BlobStorage' is not configured.");
+
+        var redisConnectionString = configuration.GetConnectionString("Redis")
+            ?? throw new InvalidOperationException("Connection string 'Redis' is not configured.");
+
+        services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
 
         services.AddSingleton(new BlobServiceClient(blobConnectionString));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
