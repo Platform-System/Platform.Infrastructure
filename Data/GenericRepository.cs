@@ -1,6 +1,7 @@
 using Platform.Application.Abstractions.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using Platform.BuildingBlocks.Responses;
 using Platform.Domain.Common;
 
 namespace Platform.Infrastructure.Data
@@ -44,7 +45,7 @@ namespace Platform.Infrastructure.Data
             return await query.ToListAsync(cancellationToken);
         }
 
-        public async Task<(List<T> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, Expression<Func<T, bool>>? filter = null, Expression<Func<T, object>>? orderBy = null, bool isDescending = false, CancellationToken cancellationToken = default, params Expression<Func<T, object>>[] includes)
+        public async Task<PagedResult<T>> GetPagedAsync(int page, int pageSize, Expression<Func<T, bool>>? filter = null, Expression<Func<T, object>>? orderBy = null, bool isDescending = false, CancellationToken cancellationToken = default, params Expression<Func<T, object>>[] includes)
         {
             if (page <= 0) page = 1;
             if (pageSize <= 0) pageSize = 10;
@@ -70,7 +71,13 @@ namespace Platform.Infrastructure.Data
             }
 
             var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
-            return (items, totalCount);
+            return new PagedResult<T>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
 
         public async Task<T?> FindAsync(Expression<Func<T, bool>> predicate, bool asNoTracking = true, CancellationToken cancellationToken = default, params Expression<Func<T, object>>[] includes)
