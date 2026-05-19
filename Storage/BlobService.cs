@@ -8,6 +8,8 @@ namespace Platform.Infrastructure.Storage;
 
 public sealed class BlobService : IBlobService
 {
+    private static readonly TimeSpan CopyPollInterval = TimeSpan.FromMilliseconds(200);
+    private static readonly TimeSpan CopyTimeout = TimeSpan.FromSeconds(30);
     private readonly BlobServiceClient _blobServiceClient;
 
     public BlobService(BlobServiceClient blobServiceClient)
@@ -81,34 +83,48 @@ public sealed class BlobService : IBlobService
         return blobNames.Select(name => GenerateReadSasUrl(container, name, expireMinutes)).ToList();
     }
 
-    public async Task<string> MakePublicAndGetUrl(string container, string blobName)
+    public async Task<string> MakePublicAndGetUrl(string container, string blobName, CancellationToken cancellationToken = default)
     {
         var sourceContainer = _blobServiceClient.GetBlobContainerClient(container);
         var sourceBlob = sourceContainer.GetBlobClient(blobName);
 
-        if (!await sourceBlob.ExistsAsync())
+        if (!await sourceBlob.ExistsAsync(cancellationToken))
             throw new FileNotFoundException("Blob not found");
 
         var publicContainerName = "products-public";
         var publicContainer = _blobServiceClient.GetBlobContainerClient(publicContainerName);
-        publicContainer.CreateIfNotExists(PublicAccessType.Blob);
+        await publicContainer.CreateIfNotExistsAsync(PublicAccessType.Blob, cancellationToken: cancellationToken);
 
         var destBlob = publicContainer.GetBlobClient(blobName);
 
-        await destBlob.StartCopyFromUriAsync(sourceBlob.Uri);
+        await destBlob.StartCopyFromUriAsync(sourceBlob.Uri, cancellationToken: cancellationToken);
 
-        BlobProperties properties;
-        do
+        using var timeoutCts = new CancellationTokenSource(CopyTimeout);
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+
+        try
         {
-            await Task.Delay(200);
-            properties = await destBlob.GetPropertiesAsync();
+            BlobProperties properties;
+            do
+            {
+                await Task.Delay(CopyPollInterval, linkedCts.Token);
+                properties = await destBlob.GetPropertiesAsync(cancellationToken: linkedCts.Token);
+            }
+            while (properties.CopyStatus == CopyStatus.Pending);
+
+            if (properties.CopyStatus != CopyStatus.Success)
+            {
+                throw new InvalidOperationException(
+                    $"Blob copy failed with status '{properties.CopyStatus}'.");
+            }
         }
-        while (properties.CopyStatus == CopyStatus.Pending);
+        catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException(
+                $"Blob copy did not complete within {CopyTimeout.TotalSeconds:0} seconds.");
+        }
 
-        if (properties.CopyStatus != CopyStatus.Success)
-            throw new Exception("Blob copy failed");
-
-        await sourceBlob.DeleteIfExistsAsync();
+        await sourceBlob.DeleteIfExistsAsync(cancellationToken: cancellationToken);
 
         return destBlob.Uri.ToString();
     }

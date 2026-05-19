@@ -15,7 +15,10 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        // 1. Redis: Sử dụng Factory để không crash khi startup nếu chưa có Redis
+        services.AddSingleton<IRedisService, NullRedisService>();
+        services.AddScoped<IBlobService, NullBlobService>();
+
+        // 1. Redis: fallback sang no-op service nếu chưa có cấu hình
         var redisConnectionString = configuration.GetConnectionString("Redis");
         if (!string.IsNullOrWhiteSpace(redisConnectionString))
         {
@@ -25,7 +28,7 @@ public static class DependencyInjection
             services.AddSingleton<IRedisService, RedisService>();
         }
 
-        // 2. Blob Storage: Chỉ đăng ký nếu có chuỗi kết nối
+        // 2. Blob Storage: fallback sang null object nếu chưa có cấu hình
         var blobConnectionString = configuration.GetConnectionString("BlobStorage");
         if (!string.IsNullOrWhiteSpace(blobConnectionString))
         {
